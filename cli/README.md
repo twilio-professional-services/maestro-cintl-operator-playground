@@ -1,17 +1,17 @@
 # Transcript Replay CLI Tool
 
-A CLI tool that replays conversation transcripts through Maestro to trigger and test language operator webhooks.
+A CLI tool that replays conversation transcripts through Maestro (Conversations Service) to trigger and test Conversational Intelligence operator webhooks.
 
 ## Overview
 
 This tool helps you test your Conversational Intelligence operators by:
 
 1. Starting a local webhook server to receive operator events
-2. Creating a Maestro conversation with participants (CUSTOMER and HUMAN_AGENT)
-3. Replaying each message from a transcript as a Maestro communication
-4. Buffering webhooks during conversation replay (silent mode)
+2. Creating a conversation in Maestro with participants (CUSTOMER and HUMAN_AGENT)
+3. Replaying each message from a transcript as a communication in the conversation
+4. Buffering Conversational Intelligence webhooks during replay (silent mode)
 5. Closing the conversation to trigger conversation_end operators
-6. Logging all buffered webhooks after conversation closes
+6. Logging all buffered operator result webhooks after conversation closes
 7. Switching to real-time webhook logging for ongoing operator results
 
 ## Prerequisites
@@ -22,12 +22,12 @@ Before using this tool, you must have:
    - Account SID
    - Auth Token
 
-2. **Conversation Configuration**
+2. **Maestro Conversation Configuration**
    - Conversation Configuration ID (format: `comms_service_...`)
-   - Optionally linked to Intelligence Service(s) via console
+   - Linked to Intelligence Service Configuration via console
 
-3. **Intelligence Service Configuration** (pre-configured and linked to Conversation Configuration)
-   - At least one language operator (e.g., CONVERSATION_SUMMARY, SCRIPT_ADHERENCE)
+3. **Conversational Intelligence Service Configuration**
+   - At least one operator configured (e.g., CONVERSATION_SUMMARY, SCRIPT_ADHERENCE)
    - Webhook action configured with your ngrok URL
    - Appropriate trigger settings (COMMUNICATION or conversation_end)
 
@@ -270,10 +270,11 @@ If you see "Configuration not found":
          │
          │ Webhooks
          ▼
-┌─────────────────┐         ┌──────────────────────────┐
-│  Maestro        │────────▶│  CIntel Operators        │
-│  Conversation   │  Events │  (Pre-configured)        │
-└─────────────────┘         └──────┬───────────────────┘
+┌─────────────────┐         ┌──────────────────────────────┐
+│  Maestro        │────────▶│  Conversational Intelligence │
+│  Conversations  │  Events │  Operators                   │
+│  Service        │         │  (Pre-configured)            │
+└─────────────────┘         └──────┬───────────────────────┘
                                    │
                                    │ Webhook POST
                                    ▼

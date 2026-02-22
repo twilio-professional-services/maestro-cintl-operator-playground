@@ -1,12 +1,14 @@
-# Maestro Conversational Intelligence Operator Playground
+# Conversational Intelligence Operator Playground
 
-A collection of tools for testing and developing Conversational Intelligence operators with Twilio Maestro.
+A collection of tools for testing and developing Conversational Intelligence operators.
+
+This tool creates conversations in **Maestro** (Twilio's Conversations Service) and tests how **Conversational Intelligence** operators analyze the communications within those conversations.
 
 ## Available Tools
 
 ### CLI Tool
 
-A command-line tool for replaying conversation transcripts through Maestro to test operator webhooks.
+A command-line tool for replaying conversation transcripts through Maestro (Conversations Service) to trigger and test Conversational Intelligence operator webhooks.
 
 📖 **[View CLI Documentation](./cli/README.md)**
 
