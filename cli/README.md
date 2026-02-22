@@ -268,7 +268,8 @@ If you see "Configuration not found":
 │  └────────────────────────────────────┘ │
 └─────────────────────────────────────────┘
          │
-         │ Webhooks
+         │ REST API
+         │ (Create Communications)
          ▼
 ┌─────────────────┐         ┌──────────────────────────────┐
 │  Maestro        │────────▶│  Conversational Intelligence │
