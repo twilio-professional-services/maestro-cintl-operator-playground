@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "name": "Customer Service Call - Order Status Inquiry",
+    "description": "Customer calls to check order status, agent follows script"
+  },
+  "participants": {
+    "customer": {
+      "address": "+15551234567",
+      "channel": "VOICE"
+    },
+    "agent": {
+      "address": "+15559876543",
+      "channel": "VOICE"
+    }
+  },
+  "messages": [
+    {
+      "role": "agent",
+      "text": "Thank you for calling customer support. My name is Sarah. How can I help you today?"
+    },
+    {
+      "role": "customer",
+      "text": "Hi, I placed an order last week and I haven't received any updates. Order number is 12345."
+    },
+    {
+      "role": "agent",
+      "text": "I understand your concern. Let me look up your order. Can you confirm your email address?"
+    },
+    {
+      "role": "customer",
+      "text": "It's customer@example.com"
+    },
+    {
+      "role": "agent",
+      "text": "Thank you. I see your order here. It shipped yesterday and should arrive by Friday. Is there anything else I can help with?"
+    },
+    {
+      "role": "customer",
+      "text": "No, that's all. Thank you!"
+    },
+    {
+      "role": "agent",
+      "text": "You're welcome! Have a great day and thank you for your business."
+    }
+  ]
+}
