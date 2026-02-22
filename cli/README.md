@@ -345,6 +345,10 @@ If you see "No HUMAN_AGENT participant found":
 
 ## Architecture
 
+### Replay Command Architecture
+
+The replay command creates conversations in Maestro and receives operator results via webhooks:
+
 ```
 ┌─────────────────┐
 │  Transcript     │
@@ -395,6 +399,60 @@ If you see "No HUMAN_AGENT participant found":
                             │  CLI Webhook    │
                             │  Server         │
                             └─────────────────┘
+```
+
+### Extract Command Architecture
+
+The extract command fetches existing conversations from Maestro and converts them to transcript format:
+
+```
+┌─────────────────┐
+│  Call SID       │
+│  (Input)        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  CLI Tool (Node.js/TypeScript)          │
+│  ┌────────────────────────────────────┐ │
+│  │ 1. Query by channelId              │ │
+│  │    GET /v2/Conversations           │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │ 2. Fetch Participants              │ │
+│  │    GET /v2/.../Participants        │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │ 3. Fetch Communications (paginate) │ │
+│  │    GET /v2/.../Communications      │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │ 4. Map CUSTOMER → customer         │ │
+│  │    Map HUMAN_AGENT → agent         │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │ 5. Normalize channels              │ │
+│  │    Reverse message order           │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │ 6. Write Transcript JSON           │ │
+│  └────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+         │
+         │ REST API
+         │ (Read Operations)
+         ▼
+┌─────────────────┐
+│  Maestro        │
+│  Conversations  │
+│  API            │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Transcript     │
+│  JSON Output    │
+└─────────────────┘
 ```
 
 ## Development
