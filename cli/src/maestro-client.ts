@@ -8,6 +8,9 @@ import {
   CreateCommunicationRequest,
   CommunicationResponse,
   UpdateConversationRequest,
+  ListConversationsResponse,
+  ListParticipantsResponse,
+  ListCommunicationsResponse,
 } from './types';
 
 export class MaestroClient {
@@ -93,6 +96,71 @@ export class MaestroClient {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw new Error(`Failed to close conversation: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async getConversationByChannelId(channelId: string): Promise<ConversationResponse | null> {
+    try {
+      const response = await this.client.get<ListConversationsResponse>(
+        `Conversations`,
+        {
+          params: { channelId }
+        }
+      );
+
+      if (response.data.conversations && response.data.conversations.length > 0) {
+        return response.data.conversations[0];
+      }
+
+      return null;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Failed to get conversation by channel ID: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async getParticipants(conversationId: string): Promise<ParticipantResponse[]> {
+    try {
+      const response = await this.client.get<ListParticipantsResponse>(
+        `Conversations/${conversationId}/Participants`
+      );
+      return response.data.participants || [];
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Failed to get participants: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async getAllCommunications(conversationId: string): Promise<CommunicationResponse[]> {
+    try {
+      const allCommunications: CommunicationResponse[] = [];
+      let nextToken: string | undefined;
+
+      do {
+        const response = await this.client.get<ListCommunicationsResponse>(
+          `Conversations/${conversationId}/Communications`,
+          {
+            params: nextToken ? { nextToken } : undefined
+          }
+        );
+
+        if (response.data.communications) {
+          allCommunications.push(...response.data.communications);
+        }
+
+        nextToken = response.data.meta?.nextToken;
+      } while (nextToken);
+
+      return allCommunications;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Failed to get communications: ${error.response?.data?.message || error.message}`);
       }
       throw error;
     }

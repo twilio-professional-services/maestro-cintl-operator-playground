@@ -109,6 +109,25 @@ export interface UpdateConversationRequest {
   status: "CLOSED";
 }
 
+// List response types for pagination
+export interface ListConversationsResponse {
+  conversations: ConversationResponse[];
+  meta: { nextToken?: string; pageSize?: number; };
+}
+
+export interface ListParticipantsResponse {
+  participants: ParticipantResponse[];
+  meta: { nextToken?: string; pageSize?: number; };
+}
+
+export interface ListCommunicationsResponse {
+  communications: CommunicationResponse[];
+  meta: { nextToken?: string; pageSize?: number; };
+}
+
+// Supported channels for transcript format
+export type ExtractableChannel = "SMS" | "VOICE" | "EMAIL";
+
 // Webhook Event Types
 export interface OperatorWebhookPayload {
   accountId: string;

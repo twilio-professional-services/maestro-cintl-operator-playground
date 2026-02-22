@@ -73,15 +73,105 @@ npm run build
 
 ## Usage
 
+This tool provides two main commands:
+
+### Replay Command
+
+Replay a conversation transcript through Maestro to test operator results:
+
 ```bash
 npm start replay <transcript-file.json>
 ```
 
-### Example
+**Example:**
 
 ```bash
 npm start replay sample-transcripts/customer-service-call.json
 ```
+
+### Extract Command
+
+Extract an existing conversation from Maestro and save it as a transcript JSON file:
+
+```bash
+npm start extract <callSid> [--output path/to/file.json]
+```
+
+**Arguments:**
+- `callSid` - Required: The call SID (channel ID) to fetch from Maestro
+- `--output` or `-o` - Optional: Custom output path (default: `extracted-transcripts/<callSid>.json`)
+
+**Example:**
+
+```bash
+# Extract with default output path
+npm start extract CA1234567890abcdef1234567890abcd
+
+# Extract with custom output path
+npm start extract CA1234567890abcdef1234567890abcd --output /tmp/my-transcript.json
+```
+
+**Expected Output:**
+
+```
+Fetching conversation with call SID: CA1234567890abcdef1234567890abcd
+✓ Found conversation: conv_01JCMXYZ
+✓ Fetched 2 participants
+✓ Fetched 7 communications
+✓ Successfully extracted transcript
+
+✓ Transcript saved to: extracted-transcripts/CA1234567890abcdef1234567890abcd.json
+  Name: Customer Service Call
+  Messages: 7
+  Customer: +15551234567 (VOICE)
+  Agent: +15559876543 (VOICE)
+```
+
+**Round-Trip Workflow:**
+
+The extract command enables a powerful testing workflow:
+
+1. Run a real call through Maestro with operators configured
+2. Extract the conversation transcript using the call SID
+3. Modify your operator configurations
+4. Replay the extracted transcript to test the changes
+5. Iterate without needing to make new live calls each time
+
+```bash
+# 1. Extract from a real conversation
+npm start extract CA1234567890abcdef1234567890abcd
+
+# 2. Replay to test operator changes
+npm start replay extracted-transcripts/CA1234567890abcdef1234567890abcd.json
+```
+
+**Channel Handling:**
+
+The extract command maps Maestro channels to the transcript format:
+
+| Maestro Channel | Transcript Channel | Notes |
+|----------------|-------------------|--------|
+| SMS | SMS | Direct mapping |
+| VOICE | VOICE | Direct mapping |
+| EMAIL | EMAIL | Direct mapping |
+| WHATSAPP | SMS | Mapped with warning |
+| RCS | SMS | Mapped with warning |
+| CHAT | SMS | Mapped with warning |
+| Other | SMS | Default with warning |
+
+**Content Type Handling:**
+
+The extract command handles different communication content types:
+
+- `TEXT` - Extracted directly
+- `TRANSCRIPTION` - Text extracted from transcription (voice calls)
+- Other types - Skipped with warning
+
+**Important Notes:**
+
+- The extract command only requires `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` (no `CONVERSATION_CONFIGURATION_ID` needed)
+- Extracted transcripts are saved to `extracted-transcripts/` by default, which is ignored by git
+- The directory is preserved but individual JSON files are not committed (they may contain customer data)
 
 ## Transcript Format
 
@@ -237,6 +327,22 @@ If you see "Configuration not found":
 - Check that the configuration exists in your account
 - Ensure it's linked to an Intelligence Service Configuration
 
+### Extract command errors
+
+If you see "No conversation found with call SID":
+- Verify the call SID is correct
+- Ensure the conversation exists in your Maestro account
+- Check that you're using the correct account credentials
+- Note: Some call SIDs may have backend issues where conversations are not properly associated
+
+If you see "No CUSTOMER participant found":
+- The conversation must have at least one participant with type `CUSTOMER`
+- Check participant types in the Maestro conversation
+
+If you see "No HUMAN_AGENT participant found":
+- The conversation must have at least one participant with type `HUMAN_AGENT`
+- Check participant types in the Maestro conversation
+
 ## Architecture
 
 ```
@@ -319,9 +425,12 @@ cli/
 │   ├── types.ts                 # TypeScript interfaces
 │   ├── maestro-client.ts        # Maestro API client
 │   ├── webhook-server.ts        # Express webhook server
-│   └── transcript-replayer.ts   # Orchestration logic
+│   ├── transcript-replayer.ts   # Orchestration logic
+│   └── transcript-extractor.ts  # Extract conversations to transcripts
 ├── sample-transcripts/
 │   └── customer-service-call.json
+├── extracted-transcripts/       # Git-ignored extracted transcripts
+│   └── .gitkeep
 └── README.md
 ```
 
