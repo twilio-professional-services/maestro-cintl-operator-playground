@@ -272,11 +272,12 @@ If you see "Configuration not found":
          ▼
 ┌─────────────────┐         ┌──────────────────────────────┐
 │  Maestro        │────────▶│  Conversational Intelligence │
-│  Conversations  │  Events │  Operators                   │
-│  Service        │         │  (Pre-configured)            │
+│  Communications │  Events │  Operators                   │
+│                 │         │  (Pre-configured)            │
 └─────────────────┘         └──────┬───────────────────────┘
                                    │
                                    │ Webhook POST
+                                   │ (Operator Results)
                                    ▼
                             ┌─────────────────┐
                             │  Ngrok Tunnel   │
