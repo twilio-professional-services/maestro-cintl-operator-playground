@@ -23,7 +23,7 @@ Before using this tool, you must have:
    - Auth Token
 
 2. **Maestro Conversation Configuration**
-   - Conversation Configuration ID (format: `comms_service_...`)
+   - Conversation Configuration ID (format: `conv_configuration_...`)
    - Linked to Intelligence Service Configuration via console
 
 3. **Conversational Intelligence Service Configuration**
@@ -59,7 +59,7 @@ npm run build
    TWILIO_AUTH_TOKEN=your_auth_token_here
 
    # REQUIRED: Conversation Configuration ID
-   CONVERSATION_CONFIGURATION_ID=comms_service_00000000000000000000000000
+   CONVERSATION_CONFIGURATION_ID=conv_configuration_00000000000000000000000000
 
    # Optional: Webhook server configuration
    WEBHOOK_PORT=3000
@@ -138,7 +138,7 @@ Transcripts are JSON files with the following structure:
 
 [STEP 2] Creating Maestro conversation...
   Conversation ID: conv_01JCMXYZ
-  Configuration ID: comms_service_00000000000000000000000000
+  Configuration ID: conv_configuration_00000000000000000000000000
 
 [STEP 3] Adding participants...
   Customer Participant ID: comms_participant_abc123
@@ -233,9 +233,9 @@ If you see authentication errors:
 
 If you see "Configuration not found":
 - Verify `CONVERSATION_CONFIGURATION_ID` in `.env` is correct
-- Ensure the configuration ID starts with `comms_service_`
+- Ensure the configuration ID starts with `conv_configuration_`
 - Check that the configuration exists in your account
-- If using intelligence services, verify the IDs are correct
+- Ensure it's linked to an Intelligence Service Configuration
 
 ## Architecture
 
