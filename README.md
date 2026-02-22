@@ -8,7 +8,7 @@ This tool creates conversations in **Maestro** (Twilio's Conversations Service) 
 
 ### CLI Tool
 
-A command-line tool for replaying conversation transcripts through Maestro (Conversations Service) to trigger and test Conversational Intelligence operator webhooks.
+A command-line tool for replaying conversation transcripts through Maestro (Conversations Service) to test Conversational Intelligence operator results.
 
 📖 **[View CLI Documentation](./cli/README.md)**
 

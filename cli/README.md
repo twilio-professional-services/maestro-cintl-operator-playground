@@ -1,6 +1,6 @@
 # Transcript Replay CLI Tool
 
-A CLI tool that replays conversation transcripts through Maestro (Conversations Service) to trigger and test Conversational Intelligence operator webhooks.
+A CLI tool that replays conversation transcripts through Maestro (Conversations Service) to test Conversational Intelligence operator results.
 
 ## Overview
 
