@@ -1,24 +1,26 @@
-# Conversational Intelligence Operator Playground
+# Conversation Intelligence Operator Playground
 
-A collection of tools for testing and developing Conversational Intelligence operators.
+A collection of tools for testing and developing Conversation Intelligence operators.
 
-This tool creates conversations in **Maestro** (Twilio's Conversations Service) and tests how **Conversational Intelligence** operators analyze the communications within those conversations.
+Creates conversations in the **Conversation Orchestrator** and tests how **Conversation Intelligence** operators analyze the communications within those conversations.
 
 ## Available Tools
 
+### Web UI *(recommended)*
+
+A browser-based interface for managing transcripts, running simulated calls, viewing operator results in real time, and managing Conversation Memory customer profiles.
+
+📖 **[View Web UI Documentation](./web/README.md)**
+
 ### CLI Tool
 
-A command-line tool for replaying conversation transcripts through Maestro (Conversations Service) to test Conversational Intelligence operator results.
+A command-line tool for replaying conversation transcripts through the Conversation Orchestrator to test Conversation Intelligence operator results.
 
 📖 **[View CLI Documentation](./cli/README.md)**
 
-### Web UI
-
-🚧 **Coming Soon** - A web-based interface for managing and replaying conversation transcripts.
-
 ## Getting Started
 
-Start with the [CLI tool](./cli/README.md) to begin testing your Conversational Intelligence operators.
+For most users, start with the [Web UI](./web/README.md). Use the [CLI](./cli/README.md) if you prefer a terminal workflow or want to script replay runs.
 
 ## Disclaimer
 

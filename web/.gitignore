@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# environment
+.env*
+
+# SQLite database
+data/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

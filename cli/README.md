@@ -1,15 +1,15 @@
 # Transcript Replay CLI Tool
 
-A CLI tool that replays conversation transcripts through Maestro (Conversations Service) to test Conversational Intelligence operator results.
+A CLI tool that replays conversation transcripts through the Conversation Orchestrator to test Conversation Intelligence operator results.
 
 ## Overview
 
-This tool helps you test your Conversational Intelligence operators by:
+This tool helps you test your Conversation Intelligence operators by:
 
 1. Starting a local webhook server to receive operator events
-2. Creating a conversation in Maestro with participants (CUSTOMER and HUMAN_AGENT)
+2. Creating a conversation in the Conversation Orchestrator with participants (CUSTOMER and HUMAN_AGENT)
 3. Replaying each message from a transcript as a communication in the conversation
-4. Buffering Conversational Intelligence webhooks during replay (silent mode)
+4. Buffering Conversation Intelligence webhooks during replay (silent mode)
 5. Closing the conversation to trigger conversation_end operators
 6. Logging all buffered operator result webhooks after conversation closes
 7. Switching to real-time webhook logging for ongoing operator results
@@ -22,11 +22,11 @@ Before using this tool, you must have:
    - Account SID
    - Auth Token
 
-2. **Maestro Conversation Configuration**
+2. **Conversation Orchestrator Configuration**
    - Conversation Configuration ID (format: `conv_configuration_...`)
    - Linked to Intelligence Service Configuration via console
 
-3. **Conversational Intelligence Service Configuration**
+3. **Conversation Intelligence Service Configuration**
    - At least one operator configured (e.g., CONVERSATION_SUMMARY, SCRIPT_ADHERENCE)
    - Webhook action configured with your ngrok URL
    - Appropriate trigger settings (COMMUNICATION or conversation_end)
@@ -77,7 +77,7 @@ This tool provides two main commands:
 
 ### Replay Command
 
-Replay a conversation transcript through Maestro to test operator results:
+Replay a conversation transcript through the Conversation Orchestrator to test operator results:
 
 ```bash
 npm start replay <transcript-file.json>
@@ -91,14 +91,14 @@ npm start replay sample-transcripts/customer-service-call.json
 
 ### Extract Command
 
-Extract an existing conversation from Maestro and save it as a transcript JSON file:
+Extract an existing conversation from the Conversation Orchestrator and save it as a transcript JSON file:
 
 ```bash
 npm start extract <callSid> [--output path/to/file.json]
 ```
 
 **Arguments:**
-- `callSid` - Required: The call SID (channel ID) to fetch from Maestro
+- `callSid` - Required: The call SID (channel ID) to fetch from the Conversation Orchestrator
 - `--output` or `-o` - Optional: Custom output path (default: `extracted-transcripts/<callSid>.json`)
 
 **Example:**
@@ -131,7 +131,7 @@ Fetching conversation with call SID: CA1234567890abcdef1234567890abcd
 
 The extract command enables a powerful testing workflow:
 
-1. Run a real call through Maestro with operators configured
+1. Run a real call through the Conversation Orchestrator with operators configured
 2. Extract the conversation transcript using the call SID
 3. Modify your operator configurations
 4. Replay the extracted transcript to test the changes
@@ -147,9 +147,9 @@ npm start replay extracted-transcripts/CA1234567890abcdef1234567890abcd.json
 
 **Channel Handling:**
 
-The extract command maps Maestro channels to the transcript format:
+The extract command maps Conversation Orchestrator channels to the transcript format:
 
-| Maestro Channel | Transcript Channel | Notes |
+| Channel | Transcript Channel | Notes |
 |----------------|-------------------|--------|
 | SMS | SMS | Direct mapping |
 | VOICE | VOICE | Direct mapping |
@@ -226,7 +226,7 @@ Transcripts are JSON files with the following structure:
   Webhook path: /webhook/operator
   Make sure your Intelligence Config webhook URL points to: https://your-ngrok-url/webhook/operator
 
-[STEP 2] Creating Maestro conversation...
+[STEP 2] Creating conversation...
   Conversation ID: conv_01JCMXYZ
   Configuration ID: conv_configuration_00000000000000000000000000
 
@@ -245,18 +245,18 @@ Transcripts are JSON files with the following structure:
 [STEP 6] Logged 2 webhook(s) received during conversation
 
   Webhook 1:
-    Conversation: conv_conversation_01kj18tf08f9e9mjpvyyn4099r
+    Conversation: conv_conversation_01JCMXYZ000000000000000000
     Intelligence Config: OperatorPlayground (v7)
     Operator Results: 1
 
     Result 1: NextAction (v2) (2.75 Seconds)
-      ID: intelligence_operatorresult_01kj19rgsgegn8hbmgnzng898m
+      ID: intelligence_operatorresult_01JCMXYZ000000000000000000
       Output Format: TEXT
       Trigger: COMMUNICATION at 2026-02-21T23:50:02.093855631Z
       Channels: VOICE
       Participants: 2
-        - HUMAN_AGENT (conv_participant_01kj19r9kcf87sqp00a2ry1fpd)
-        - CUSTOMER (conv_participant_01kj19r9brf2hs00m113j4nfsn)
+        - HUMAN_AGENT (conv_participant_01JCMXYZ000000000000000000)
+        - CUSTOMER (conv_participant_01JCMXYZ000000000000000001)
       Result:
         {
           "text": "Look up the order and confirm the email address."
@@ -267,18 +267,18 @@ Transcripts are JSON files with the following structure:
   Press Ctrl-C to stop
 
 [WEBHOOK 2] Received operator webhook:
-  Conversation: conv_conversation_01kj19r964fe7a8szchez55bh8
+  Conversation: conv_conversation_01JCMXYZ000000000000000000
   Intelligence Config: OperatorPlayground (v7)
   Operator Results: 1
 
     Result 1: ConversationSummary (v1) (3.12 Seconds)
-      ID: intelligence_operatorresult_01kj19xtp67eqebkmp1mdb832x9
+      ID: intelligence_operatorresult_01JCMXYZ000000000000000001
       Output Format: TEXT
       Trigger: conversation_end at 2026-02-21T23:51:30.000000000Z
       Channels: VOICE
       Participants: 2
-        - HUMAN_AGENT (conv_participant_01kj19r9kcf87sqp00a2ry1fpd)
-        - CUSTOMER (conv_participant_01kj19r9brf2hs00m113j4nfsn)
+        - HUMAN_AGENT (conv_participant_01JCMXYZ000000000000000000)
+        - CUSTOMER (conv_participant_01JCMXYZ000000000000000001)
       Result:
         {
           "summary": "Customer inquired about order status..."
@@ -331,23 +331,23 @@ If you see "Configuration not found":
 
 If you see "No conversation found with call SID":
 - Verify the call SID is correct
-- Ensure the conversation exists in your Maestro account
+- Ensure the conversation exists in your account
 - Check that you're using the correct account credentials
 - Note: Some call SIDs may have backend issues where conversations are not properly associated
 
 If you see "No CUSTOMER participant found":
 - The conversation must have at least one participant with type `CUSTOMER`
-- Check participant types in the Maestro conversation
+- Check participant types in the conversation
 
 If you see "No HUMAN_AGENT participant found":
 - The conversation must have at least one participant with type `HUMAN_AGENT`
-- Check participant types in the Maestro conversation
+- Check participant types in the conversation
 
 ## Architecture
 
 ### Replay Command Architecture
 
-The replay command creates conversations in Maestro and receives operator results via webhooks:
+The replay command creates conversations in the Conversation Orchestrator and receives operator results via webhooks:
 
 ```
 ┌─────────────────┐
@@ -362,7 +362,7 @@ The replay command creates conversations in Maestro and receives operator result
 │  │ 1. Start Webhook Server (Express)  │ │
 │  └────────────────────────────────────┘ │
 │  ┌────────────────────────────────────┐ │
-│  │ 2. Create Conversation + Parts     │ │
+│  │ 2. Create Conversation + Participants │ │
 │  └────────────────────────────────────┘ │
 │  ┌────────────────────────────────────┐ │
 │  │ 3. Replay Messages (Buffer WHs)    │ │
@@ -382,8 +382,8 @@ The replay command creates conversations in Maestro and receives operator result
          │ (Create Communications)
          ▼
 ┌─────────────────┐         ┌──────────────────────────────┐
-│  Maestro        │────────▶│  Conversational Intelligence │
-│  Communications │  Events │  Operators                   │
+│  Conversation   │────────▶│  Conversation Intelligence   │
+│  Orchestrator   │  Events │  Operators                   │
 │                 │         │  (Pre-configured)            │
 └─────────────────┘         └──────┬───────────────────────┘
                                    │
@@ -403,7 +403,7 @@ The replay command creates conversations in Maestro and receives operator result
 
 ### Extract Command Architecture
 
-The extract command fetches existing conversations from Maestro and converts them to transcript format:
+The extract command fetches existing conversations from the Conversation Orchestrator and converts them to transcript format:
 
 ```
 ┌─────────────────┐
@@ -443,8 +443,8 @@ The extract command fetches existing conversations from Maestro and converts the
          │ (Read Operations)
          ▼
 ┌─────────────────┐
-│  Maestro        │
-│  Conversations  │
+│  Conversation   │
+│  Orchestrator   │
 │  API            │
 └────────┬────────┘
          │
@@ -481,7 +481,7 @@ cli/
 │   ├── index.ts                 # Main CLI entry point
 │   ├── config.ts                # Load .env configuration
 │   ├── types.ts                 # TypeScript interfaces
-│   ├── maestro-client.ts        # Maestro API client
+│   ├── maestro-client.ts        # Conversation Orchestrator API client
 │   ├── webhook-server.ts        # Express webhook server
 │   ├── transcript-replayer.ts   # Orchestration logic
 │   └── transcript-extractor.ts  # Extract conversations to transcripts

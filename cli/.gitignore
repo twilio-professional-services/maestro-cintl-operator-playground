@@ -24,3 +24,6 @@ Thumbs.db
 
 # Extracted transcripts (keep folder, ignore contents)
 extracted-transcripts/*.json
+
+# Claude Code
+.claude/
