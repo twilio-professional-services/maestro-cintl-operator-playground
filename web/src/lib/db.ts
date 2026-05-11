@@ -44,6 +44,13 @@ function getDb(): Database.Database {
       payload TEXT NOT NULL,
       received_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS simulated_call_communications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      simulated_call_id INTEGER NOT NULL REFERENCES simulated_calls(id),
+      message_index INTEGER NOT NULL,
+      communication_id TEXT NOT NULL
+    );
   `);
 
   return _db;
@@ -156,6 +163,7 @@ export function listOperatorResultsSince(simulatedCallId: number, afterId: numbe
 export function deleteSimulatedCall(id: number): void {
   const db = getDb();
   const del = db.transaction(() => {
+    db.prepare('DELETE FROM simulated_call_communications WHERE simulated_call_id = ?').run(id);
     db.prepare('DELETE FROM operator_results WHERE simulated_call_id = ?').run(id);
     db.prepare('DELETE FROM simulated_calls WHERE id = ?').run(id);
   });
@@ -167,8 +175,24 @@ export function bulkDeleteSimulatedCalls(ids: number[]): void {
   const db = getDb();
   const placeholders = ids.map(() => '?').join(',');
   const del = db.transaction(() => {
+    db.prepare(`DELETE FROM simulated_call_communications WHERE simulated_call_id IN (${placeholders})`).run(...ids);
     db.prepare(`DELETE FROM operator_results WHERE simulated_call_id IN (${placeholders})`).run(...ids);
     db.prepare(`DELETE FROM simulated_calls WHERE id IN (${placeholders})`).run(...ids);
   });
   del();
+}
+
+// Communication helpers
+export function insertCommunication(simulatedCallId: number, messageIndex: number, communicationId: string): void {
+  const db = getDb();
+  db.prepare(
+    'INSERT INTO simulated_call_communications (simulated_call_id, message_index, communication_id) VALUES (?, ?, ?)'
+  ).run(simulatedCallId, messageIndex, communicationId);
+}
+
+export function listCommunications(simulatedCallId: number): Array<{ message_index: number; communication_id: string }> {
+  const db = getDb();
+  return db.prepare(
+    'SELECT message_index, communication_id FROM simulated_call_communications WHERE simulated_call_id = ? ORDER BY message_index ASC'
+  ).all(simulatedCallId) as Array<{ message_index: number; communication_id: string }>;
 }

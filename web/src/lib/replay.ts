@@ -1,5 +1,5 @@
 import { createMaestroClient } from './maestro-client';
-import { updateSimulatedCall } from './db';
+import { updateSimulatedCall, insertCommunication } from './db';
 import type { Transcript } from '@/types';
 
 
@@ -38,7 +38,7 @@ export async function runReplay(transcript: Transcript, simulatedCallId: number,
     });
 
     // Replay messages
-    for (const message of transcript.messages) {
+    for (const [messageIndex, message] of transcript.messages.entries()) {
       const isCustomer = message.role === 'customer';
       const authorAddress = isCustomer ? customerAddress : transcript.participants.agent.address;
       const authorChannel = isCustomer ? transcript.participants.customer.channel : transcript.participants.agent.channel;
@@ -47,12 +47,13 @@ export async function runReplay(transcript: Transcript, simulatedCallId: number,
       const authorParticipantId = isCustomer ? customerParticipant.id : agentParticipant.id;
       const recipientParticipantId = isCustomer ? agentParticipant.id : customerParticipant.id;
 
-      await client.createCommunication(conversationId, {
+      const comm = await client.createCommunication(conversationId, {
         author: { address: authorAddress, channel: authorChannel, participantId: authorParticipantId },
         content: { type: 'TEXT', text: message.text },
         recipients: [{ address: recipientAddress, channel: recipientChannel, participantId: recipientParticipantId }],
       });
 
+      insertCommunication(simulatedCallId, messageIndex, comm.id);
     }
 
     // Close conversation — triggers conversation_end operators

@@ -13,9 +13,15 @@ interface OperatorResultEntry {
   received_at: string;
 }
 
+interface CommunicationEntry {
+  message_index: number;
+  communication_id: string;
+}
+
 interface CallDetail extends SimulatedCallRow {
   transcript: Transcript | null;
   operatorResults: OperatorResultEntry[];
+  communications: CommunicationEntry[];
 }
 
 export default function SimulatedCallDetailPage({ params }: { params: { id: string } }) {
@@ -28,7 +34,9 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
   const [activeTab, setActiveTab] = useState<'operators' | 'memory'>('operators');
   const [memory, setMemory] = useState<MemoryResult | null>(null);
   const [memoryLoading, setMemoryLoading] = useState(false);
+  const [highlightedCommId, setHighlightedCommId] = useState<string | null>(null);
   const esRef = useRef<EventSource | null>(null);
+  const resultCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     fetch(`/api/simulated-calls/${params.id}`)
@@ -42,7 +50,8 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
           if (entry.id > maxId) maxId = entry.id;
         }
 
-        openStream(maxId);
+        const messageCount = data.transcript?.messages?.length ?? 0;
+        openStream(maxId, messageCount);
       })
       .catch(() => setError('Failed to load call'));
 
@@ -75,8 +84,9 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
     }
   }
 
-  function openStream(afterId: number) {
+  function openStream(afterId: number, expectedMessageCount: number) {
     let lastSeen = afterId;
+    let knownCommCount = 0;
     const es = new EventSource(`/api/simulated-calls/${params.id}/stream?after=${afterId}`);
     esRef.current = es;
 
@@ -90,6 +100,19 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
           prev.some((e) => e.id === msg.data.id) ? prev : [...prev, msg.data]
         );
         setLive(true);
+
+        // Re-fetch call to pick up communications as replay progresses.
+        // Per-communication operators can fire before replay finishes, so we
+        // keep re-fetching until we have all expected communications.
+        if (knownCommCount < expectedMessageCount) {
+          fetch(`/api/simulated-calls/${params.id}`)
+            .then((r) => r.json())
+            .then((data: CallDetail) => {
+              knownCommCount = data.communications?.length ?? 0;
+              setCall(data);
+            })
+            .catch(() => { /* non-fatal */ });
+        }
       }
     };
 
@@ -104,14 +127,39 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
     };
   }
 
+  function handleTranscriptMessageClick(commId: string) {
+    setHighlightedCommId((prev) => (prev === commId ? null : commId));
+    resultCardRefs.current.get(commId)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   if (error) return <div className="text-red-600">{error}</div>;
   if (!call) return <div className="text-gray-500">Loading…</div>;
 
   const transcript = call.transcript;
 
-  const allOpResults = results.flatMap((entry) =>
-    entry.payload.operatorResults.map((opResult) => ({ opResult }))
+  const commMap = new Map<string, number>(
+    (call.communications ?? []).map(({ communication_id, message_index }) => [communication_id, message_index])
   );
+  const hasCommMap = commMap.size > 0;
+
+  // Map from message_index to communication_id for the transcript bubble links
+  const indexToCommId = new Map<number, string>(
+    (call.communications ?? []).map(({ message_index, communication_id }) => [message_index, communication_id])
+  );
+
+  const allOpResults = results
+    .flatMap((entry) =>
+      entry.payload.operatorResults.map((opResult) => ({
+        opResult,
+        sortIndex: commMap.get(opResult.executionDetails?.communications?.last ?? '') ?? Infinity,
+        receivedAt: entry.received_at,
+      }))
+    )
+    .sort((a, b) =>
+      a.sortIndex !== b.sortIndex
+        ? a.sortIndex - b.sortIndex
+        : a.receivedAt < b.receivedAt ? -1 : 1
+    );
 
   const filteredOpResults = activeFilter
     ? allOpResults.filter(({ opResult }) => opResult.operator.id === activeFilter)
@@ -140,20 +188,33 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
           <h2 className="text-lg font-semibold mb-3">Transcript</h2>
           {transcript ? (
             <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-              {transcript.messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'customer' ? 'justify-start' : 'justify-end'}`}>
-                  <div
-                    className={`max-w-sm px-3 py-2 rounded-2xl text-sm ${
-                      msg.role === 'customer' ? 'bg-gray-100' : 'bg-blue-600 text-white'
-                    }`}
-                  >
-                    <p className={`text-xs mb-0.5 font-medium ${msg.role === 'customer' ? 'text-gray-400' : 'text-blue-200'}`}>
-                      {msg.role}
-                    </p>
-                    {msg.text}
+              {transcript.messages.map((msg, i) => {
+                const commId = indexToCommId.get(i);
+                const isCustomer = msg.role === 'customer';
+                return (
+                  <div key={i} className={`flex items-center gap-1 group ${isCustomer ? 'justify-start' : 'justify-end flex-row-reverse'}`}>
+                    <div
+                      className={`max-w-sm px-3 py-2 rounded-2xl text-sm ${
+                        isCustomer ? 'bg-gray-100' : 'bg-blue-600 text-white'
+                      }`}
+                    >
+                      <p className={`text-xs mb-0.5 font-medium ${isCustomer ? 'text-gray-400' : 'text-blue-200'}`}>
+                        {msg.role}
+                      </p>
+                      {msg.text}
+                    </div>
+                    {hasCommMap && commId && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleTranscriptMessageClick(commId); }}
+                        className={`opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1 ${
+                          highlightedCommId === commId ? 'text-blue-600' : 'text-gray-400 hover:text-blue-600'
+                        }`}
+                        title="Show related operator results"
+                      >→</button>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-gray-400 text-sm">No transcript data.</p>
@@ -232,9 +293,22 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                  {filteredOpResults.map(({ opResult }) => (
-                    <OperatorResultCard key={opResult.id} result={opResult} />
-                  ))}
+                  {filteredOpResults.map(({ opResult }) => {
+                    const lastCommId = opResult.executionDetails?.communications?.last;
+                    return (
+                      <OperatorResultCard
+                        key={opResult.id}
+                        result={opResult}
+                        highlighted={!!lastCommId && highlightedCommId === lastCommId}
+                        cardRef={(el) => {
+                          if (lastCommId) {
+                            if (el) resultCardRefs.current.set(lastCommId, el);
+                            else resultCardRefs.current.delete(lastCommId);
+                          }
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -358,15 +432,24 @@ function CustomerMemoryPanel({
 
 function OperatorResultCard({
   result,
+  highlighted = false,
+  cardRef,
 }: {
   result: OperatorWebhookPayload['operatorResults'][number];
+  highlighted?: boolean;
+  cardRef?: (el: HTMLDivElement | null) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const latencyMs = result.metadata?.system?.latencyMs;
   const latencyLabel = latencyMs != null ? `${(latencyMs / 1000).toFixed(2)}s` : '—';
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div
+      ref={cardRef}
+      className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 ${
+        highlighted ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'
+      }`}
+    >
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between"
