@@ -226,7 +226,7 @@ export interface TranscriptRow {
 
 export interface SimulatedCallRow {
   id: number;
-  transcript_id: number;
+  transcript_id: number | null;
   conversation_id: string | null;
   status?: string;
   created_at: string;

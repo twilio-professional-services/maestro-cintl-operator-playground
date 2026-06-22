@@ -39,9 +39,16 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
   const resultCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
+    // Guard against the async race where the component unmounts before the
+    // initial fetch resolves: without this, cleanup runs while esRef is still
+    // null and the later openStream() leaks an EventSource on an unmounted
+    // component that nothing ever closes.
+    let cancelled = false;
+
     fetch(`/api/simulated-calls/${params.id}`)
       .then((r) => r.json())
       .then((data: CallDetail) => {
+        if (cancelled) return;
         setCall(data);
         setResults(data.operatorResults);
 
@@ -53,14 +60,18 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
         const messageCount = data.transcript?.messages?.length ?? 0;
         openStream(maxId, messageCount);
       })
-      .catch(() => setError('Failed to load call'));
+      .catch(() => { if (!cancelled) setError('Failed to load call'); });
 
     fetch('/api/intelligence-config')
       .then((r) => r.json())
-      .then((data: { operators: ConfiguredOperator[] }) => setConfiguredOperators(data.operators))
+      .then((data: { operators: ConfiguredOperator[] }) => { if (!cancelled) setConfiguredOperators(data.operators); })
       .catch(() => { /* non-fatal */ });
 
-    return () => esRef.current?.close();
+    return () => {
+      cancelled = true;
+      esRef.current?.close();
+      esRef.current = null;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
@@ -85,17 +96,17 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
   }
 
   function openStream(afterId: number, expectedMessageCount: number) {
-    let lastSeen = afterId;
     let knownCommCount = 0;
     const es = new EventSource(`/api/simulated-calls/${params.id}/stream?after=${afterId}`);
     esRef.current = es;
+
+    es.onopen = () => setLive(true);
 
     es.onmessage = (event) => {
       const msg = JSON.parse(event.data as string) as
         | { type: 'operator_result'; data: OperatorResultEntry };
 
       if (msg.type === 'operator_result') {
-        if (msg.data.id > lastSeen) lastSeen = msg.data.id;
         setResults((prev) =>
           prev.some((e) => e.id === msg.data.id) ? prev : [...prev, msg.data]
         );
@@ -116,15 +127,12 @@ export default function SimulatedCallDetailPage({ params }: { params: { id: stri
       }
     };
 
-    es.onerror = () => {
-      es.close();
-      setLive(false);
-      esRef.current = null;
-      const next = new EventSource(`/api/simulated-calls/${params.id}/stream?after=${lastSeen}`);
-      esRef.current = next;
-      next.onmessage = es.onmessage;
-      next.onerror = es.onerror;
-    };
+    // The browser's EventSource auto-reconnects on transient errors using this
+    // same connection. Only reflect liveness here — do NOT open another
+    // EventSource, or every error leaks a socket that keeps reconnecting on its
+    // own, eventually exhausting Chrome's per-host connection limit and locking
+    // up the tab. Re-delivered results are de-duped by id in onmessage above.
+    es.onerror = () => setLive(false);
   }
 
   function handleTranscriptMessageClick(commId: string) {
