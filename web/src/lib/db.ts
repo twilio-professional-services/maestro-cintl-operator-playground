@@ -78,7 +78,15 @@ export function getTranscript(id: number): TranscriptRow | null {
 
 export function deleteTranscript(id: number): void {
   const db = getDb();
-  db.prepare('DELETE FROM transcripts WHERE id = ?').run(id);
+  // Keep any simulated calls derived from this transcript as historical
+  // records — just detach them. Done manually (rather than via ON DELETE SET
+  // NULL) because existing databases were created without that FK rule and
+  // SQLite can't alter a constraint in place.
+  const del = db.transaction(() => {
+    db.prepare('UPDATE simulated_calls SET transcript_id = NULL WHERE transcript_id = ?').run(id);
+    db.prepare('DELETE FROM transcripts WHERE id = ?').run(id);
+  });
+  del();
 }
 
 // Simulated call helpers
